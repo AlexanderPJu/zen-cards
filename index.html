@@ -9,14 +9,9 @@
 </head>
 <body>
 
-    <!-- Скрытый инпут для выбора файла импорта -->
     <input type="file" id="importFileInput" accept=".json" style="display: none;">
-    
-    <!-- Кнопка импорта (загрузки) базы -->
     <button class="import-btn" id="importBtn">↑</button>
-    <!-- Кнопка экспорта (скачивания) базы -->
     <button class="export-btn" id="exportBtn">↓</button>
-    <!-- Кнопка вызова формы добавления -->
     <button class="add-trigger-btn" id="openFormBtn">+</button>
 
     <div class="card-container" id="cardContainer">
@@ -26,7 +21,6 @@
                 <div class="badge" id="cardBadge">English</div>
                 <div class="furigana" id="cardFurigana"></div>
                 <h1 class="front-text" id="cardFrontText"></h1>
-                <!-- Контейнер для подсказки-призрака -->
                 <div class="ghost-hint" id="cardHint"></div>
             </div>
             
@@ -38,18 +32,19 @@
         </div>
     </div>
 
+    <!-- Обновленная панель кнопок (всегда видна) -->
     <div class="actions" id="actions">
-        <button id="nextBtn">Next Card</button>
+        <button id="refreshBtn">Refresh</button>
+        <button id="gotItBtn">Got it</button>
     </div>
 
-    <!-- Сдвижная панель формы (Glassmorphism) -->
+    <!-- Сдвижная панель формы -->
     <div class="form-overlay" id="formOverlay">
         <div class="form-panel" id="formPanel">
             <button class="close-btn" id="closeFormBtn">×</button>
             <h2 class="form-title">Create Concept</h2>
             
             <form id="addCardForm" autocomplete="off">
-                <!-- Селектор типа (EN / JA / ZH / KO) -->
                 <div class="type-selector">
                     <label class="type-option option-en">
                         <input type="radio" name="cardType" value="english" checked>
@@ -74,10 +69,9 @@
                 </div>
                 
                 <div class="input-group" id="readingGroup">
-                    <input type="text" id="inputReading" placeholder="Reading (Pronunciation / Furigana / Pinyin)">
+                    <input type="text" id="inputReading" placeholder="Pronunciation / Furigana">
                 </div>
 
-                <!-- Поле для подсказки-призрака -->
                 <div class="input-group">
                     <input type="text" id="inputHint" placeholder="Hint (Ghost Text on Front - Optional)">
                 </div>
