@@ -121,7 +121,7 @@ body {
 .ghost-hint {
     font-size: 0.95rem;
     color: var(--text-main);
-    opacity: 0.1; /* Едва различимый текст */
+    opacity: 0.1; 
     font-weight: 300;
     letter-spacing: 0.05em;
     margin-top: 15px;
@@ -129,7 +129,6 @@ body {
     transition: opacity 0.4s ease;
 }
 
-/* При наведении карточка слегка "проявляет" призрак-текст для более комфортного считывания */
 .card-container:hover .ghost-hint {
     opacity: 0.18;
 }
@@ -215,6 +214,24 @@ button:active {
     position: fixed;
     top: 30px;
     right: 84px; 
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 10;
+}
+
+/* Кнопка Импорта (↑) */
+.import-btn {
+    position: fixed;
+    top: 30px;
+    right: 138px; /* Сдвинута еще левее, чтобы встать в красивый ряд */
     width: 44px;
     height: 44px;
     padding: 0;
@@ -379,10 +396,9 @@ button:active {
     transition: all 0.3s ease;
 }
 
-/* Область контекста не должна уменьшаться меньше дефолтной высоты */
 .input-group textarea {
     resize: vertical; 
-    min-height: 96px; /* Высота по умолчанию */
+    min-height: 96px; 
     max-height: 250px; 
 }
 

@@ -62,7 +62,7 @@ const elFurigana = document.getElementById('cardFurigana');
 const elFrontText = document.getElementById('cardFrontText');
 const elBackText = document.getElementById('cardBackText');
 const elNotes = document.getElementById('cardNotes');
-const elHint = document.getElementById('cardHint'); // Контейнер подсказки
+const elHint = document.getElementById('cardHint');
 
 const openFormBtn = document.getElementById('openFormBtn');
 const closeFormBtn = document.getElementById('closeFormBtn');
@@ -71,6 +71,10 @@ const addCardForm = document.getElementById('addCardForm');
 const radioTypes = document.getElementsByName('cardType');
 
 const exportBtn = document.getElementById('exportBtn');
+
+// Элементы импорта
+const importBtn = document.getElementById('importBtn');
+const importFileInput = document.getElementById('importFileInput');
 
 const colors = {
     english: { primary: "#6B7B9C", shadow: "rgba(107, 123, 156, 0.15)" },
@@ -111,8 +115,6 @@ function loadCard(index) {
     elFurigana.textContent = cardData.reading || "";
     elFrontText.textContent = cardData.front;
     elBackText.textContent = cardData.back;
-    
-    // Выводим подсказку-призрак (если она есть)
     elHint.textContent = cardData.hint || "";
     
     const rawNotes = cardData.notes || "";
@@ -185,7 +187,7 @@ function handleFormSubmit(e) {
         type: selectedCardType,
         front: document.getElementById('inputFront').value.trim(),
         reading: document.getElementById('inputReading').value.trim(),
-        hint: document.getElementById('inputHint').value.trim(), // Сохранение новой подсказки
+        hint: document.getElementById('inputHint').value.trim(), 
         back: document.getElementById('inputBack').value.trim(),
         notes: document.getElementById('inputNotes').value.trim()
     };
@@ -213,6 +215,38 @@ function exportDeck() {
     linkElement.click();
 }
 
+// Функция импорта базы из выбранного JSON-файла
+function handleImportFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            
+            // Валидация: проверяем, что импортируем массив
+            if (Array.isArray(importedData)) {
+                deck = importedData;
+                saveDeckToStorage(); // Записываем в LocalStorage
+                
+                // Перезагружаем интерфейс с первой карточки импортированной колоды
+                currentIndex = 0;
+                loadCard(currentIndex);
+            } else {
+                alert("Ошибка: Неверный формат файла. Ожидался массив карточек.");
+            }
+        } catch (err) {
+            alert("Ошибка чтения JSON файла.");
+            console.error(err);
+        }
+    };
+    reader.readAsText(file);
+    
+    // Сбрасываем значение инпута, чтобы можно было загрузить тот же файл повторно
+    importFileInput.value = '';
+}
+
 cardContainer.addEventListener('click', (e) => {
     if (e.target.tagName.toLowerCase() === 'a') {
         return; 
@@ -235,6 +269,15 @@ exportBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     exportDeck(); 
 });
+
+// Клик по кнопке импорта открывает скрытый системный инпут выбора файла
+importBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    importFileInput.click();
+});
+
+// Слушаем выбор файла
+importFileInput.addEventListener('change', handleImportFile);
 
 radioTypes.forEach(radio => radio.addEventListener('change', updateFormTheme));
 addCardForm.addEventListener('submit', handleFormSubmit);
