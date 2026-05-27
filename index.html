@@ -26,23 +26,23 @@
             
             <!-- Обратная сторона -->
             <div class="card-face card-back">
+                <!-- Кнопка редактирования (только на обороте) -->
+                <button class="edit-btn" id="editCardBtn">✎</button>
                 <div class="back-text" id="cardBackText"></div>
                 <div class="notes" id="cardNotes"></div>
             </div>
         </div>
     </div>
 
-    <!-- Обновленная панель кнопок (всегда видна) -->
     <div class="actions" id="actions">
         <button id="refreshBtn">Refresh</button>
         <button id="gotItBtn">Got it</button>
     </div>
 
-    <!-- Сдвижная панель формы -->
     <div class="form-overlay" id="formOverlay">
         <div class="form-panel" id="formPanel">
             <button class="close-btn" id="closeFormBtn">×</button>
-            <h2 class="form-title">Create Concept</h2>
+            <h2 class="form-title" id="formTitle">Create Concept</h2>
             
             <form id="addCardForm" autocomplete="off">
                 <div class="type-selector">

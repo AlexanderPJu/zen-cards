@@ -51,11 +51,10 @@ if (!deck || deck.length === 0) {
 }
 
 let currentIndex = 0;
+let isEditMode = false; // Флаг режима редактирования
 
 const cardContainer = document.getElementById('cardContainer');
 const cardElement = document.getElementById('card');
-
-// Новые кнопки
 const refreshBtn = document.getElementById('refreshBtn');
 const gotItBtn = document.getElementById('gotItBtn');
 
@@ -67,9 +66,12 @@ const elNotes = document.getElementById('cardNotes');
 const elHint = document.getElementById('cardHint');
 
 const openFormBtn = document.getElementById('openFormBtn');
+const editCardBtn = document.getElementById('editCardBtn'); // Новая кнопка
 const closeFormBtn = document.getElementById('closeFormBtn');
 const formOverlay = document.getElementById('formOverlay');
+const formTitle = document.getElementById('formTitle');
 const addCardForm = document.getElementById('addCardForm');
+const submitBtn = document.getElementById('submitBtn');
 const radioTypes = document.getElementsByName('cardType');
 
 const exportBtn = document.getElementById('exportBtn');
@@ -96,62 +98,35 @@ function getThemeColor(type) {
     return colors[type] ? `var(--color-${cssKeys[type]})` : "var(--text-muted)";
 }
 
-// === ЯДРО: Smooth Mode Spaced Repetition ===
 function getNextCardIndex() {
     if (deck.length === 0) return 0;
-
     const now = Date.now();
     let dueIndices = [];
     let newIndices = [];
-
-    // Lazy Evaluation: сканируем колоду на лету
     deck.forEach((card, index) => {
-        if (!card.nextReview) {
-            newIndices.push(index); // Новые карточки
-        } else if (card.nextReview <= now) {
-            dueIndices.push(index); // Пора повторить
-        }
+        if (!card.nextReview) newIndices.push(index);
+        else if (card.nextReview <= now) dueIndices.push(index);
     });
-
-    // 1. Приоритет карточкам, которые подошло время повторить (выбираем случайно для разнообразия)
-    if (dueIndices.length > 0) {
-        return dueIndices[Math.floor(Math.random() * dueIndices.length)];
-    } 
-    // 2. Если долгов нет, берем новые слова
-    else if (newIndices.length > 0) {
-        return newIndices[Math.floor(Math.random() * newIndices.length)];
-    } 
-    // 3. Playful Exploration: всё выучено. Просто берем любую случайную карту из всей колоды
-    else {
-        return Math.floor(Math.random() * deck.length);
-    }
+    if (dueIndices.length > 0) return dueIndices[Math.floor(Math.random() * dueIndices.length)];
+    else if (newIndices.length > 0) return newIndices[Math.floor(Math.random() * newIndices.length)];
+    else return Math.floor(Math.random() * deck.length);
 }
 
 function gradeCard(remembered) {
     if (deck.length === 0) return;
-    
     const card = deck[currentIndex];
     const now = Date.now();
-
     if (remembered) {
-        // Успех: повышаем уровень и отодвигаем в будущее
         card.level = (card.level || 0) + 1;
-        // Мягкие интервалы: 12ч, 2д, 5д, 14д, 30д, 2 мес+
         const intervalsInDays = [0.5, 2, 5, 14, 30, 60];
         const daysToWait = intervalsInDays[Math.min(card.level - 1, intervalsInDays.length - 1)];
         card.nextReview = now + (daysToWait * 24 * 60 * 60 * 1000);
     } else {
-        // Ошибка (Refresh): сбрасываем прогресс, показываем снова очень скоро
         card.level = 0;
-        card.nextReview = now + (5 * 60 * 1000); // через 5 минут
+        card.nextReview = now + (5 * 60 * 1000);
     }
-
     saveDeckToStorage();
-
-    // Вычисляем следующую карту по алгоритму
     currentIndex = getNextCardIndex();
-
-    // Бесшовная анимация перехода
     if (cardElement.classList.contains('is-flipped')) {
         cardElement.classList.remove('is-flipped');
         setTimeout(() => loadCard(currentIndex), 350); 
@@ -159,29 +134,24 @@ function gradeCard(remembered) {
         loadCard(currentIndex);
     }
 }
-// ==========================================
 
 function loadCard(index) {
     if (deck.length === 0) return;
     const cardData = deck[index];
     const activeColor = getThemeColor(cardData.type);
-    
     document.documentElement.style.setProperty('--card-glow', activeColor + '22'); 
     elBadge.textContent = cardData.type;
     elBadge.style.color = activeColor;
     elBadge.style.borderColor = activeColor + '44';
-    
     elFurigana.textContent = cardData.reading || "";
     elFrontText.textContent = cardData.front;
     elBackText.textContent = cardData.back;
     elHint.textContent = cardData.hint || "";
-    
     const rawNotes = cardData.notes || "";
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const notesWithLinks = rawNotes.replace(urlRegex, function(url) {
         return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
-    
     elNotes.innerHTML = notesWithLinks;
     cardElement.classList.remove('is-flipped');
 }
@@ -201,20 +171,46 @@ function updateFormTheme() {
     const theme = colors[selectedType];
     document.documentElement.style.setProperty('--form-active-color', theme.primary);
     document.documentElement.style.setProperty('--form-active-color-shadow', theme.shadow);
-
     const readingInput = document.getElementById('inputReading');
-    if (selectedType === 'english') {
-        readingInput.placeholder = "Pronunciation (Transcription / /juːˈbɪk.wɪ.təs/)";
-    } else if (selectedType === 'japanese') {
-        readingInput.placeholder = "Reading (Furigana / かいぜん)";
-    } else if (selectedType === 'chinese') {
-        readingInput.placeholder = "Reading (Pinyin / nǐ hǎo)";
-    } else if (selectedType === 'korean') {
-        readingInput.placeholder = "Reading (Romanization / Pronunciation)";
-    }
+    if (selectedType === 'english') readingInput.placeholder = "Pronunciation (Transcription)";
+    else if (selectedType === 'japanese') readingInput.placeholder = "Reading (Furigana)";
+    else if (selectedType === 'chinese') readingInput.placeholder = "Reading (Pinyin)";
+    else if (selectedType === 'korean') readingInput.placeholder = "Reading (Romanization)";
 }
 
-function openForm() {
+// Открытие формы в режиме создания
+function openAddForm() {
+    isEditMode = false;
+    formTitle.textContent = "Create Concept";
+    submitBtn.textContent = "Save to Deck";
+    addCardForm.reset();
+    formOverlay.classList.add('active');
+    updateFormTheme();
+}
+
+// Открытие формы в режиме редактирования (п.3)
+function openEditForm() {
+    isEditMode = true;
+    const card = deck[currentIndex];
+    
+    formTitle.textContent = "Edit Concept";
+    submitBtn.textContent = "Update Concept";
+    
+    // Предзаполнение полей
+    document.getElementById('inputFront').value = card.front;
+    document.getElementById('inputReading').value = card.reading || "";
+    document.getElementById('inputHint').value = card.hint || "";
+    document.getElementById('inputBack').value = card.back;
+    document.getElementById('inputNotes').value = card.notes || "";
+    
+    // Установка радио-кнопки типа
+    for (const radio of radioTypes) {
+        if (radio.value === card.type) {
+            radio.checked = true;
+            break;
+        }
+    }
+    
     formOverlay.classList.add('active');
     updateFormTheme();
 }
@@ -234,21 +230,28 @@ function handleFormSubmit(e) {
         }
     }
 
-    const newCard = {
+    const cardData = {
         type: selectedCardType,
         front: document.getElementById('inputFront').value.trim(),
         reading: document.getElementById('inputReading').value.trim(),
         hint: document.getElementById('inputHint').value.trim(), 
         back: document.getElementById('inputBack').value.trim(),
-        notes: document.getElementById('inputNotes').value.trim(),
-        level: 0, // Инициализация параметров алгоритма
-        nextReview: null
+        notes: document.getElementById('inputNotes').value.trim()
     };
 
-    deck.push(newCard);
+    if (isEditMode) {
+        // РЕДАКТИРОВАНИЕ: обновляем только контент, сохраняя прогресс (level/nextReview)
+        const currentCard = deck[currentIndex];
+        Object.assign(currentCard, cardData);
+    } else {
+        // СОЗДАНИЕ: добавляем новую карту
+        cardData.level = 0;
+        cardData.nextReview = null;
+        deck.push(cardData);
+        currentIndex = deck.length - 1;
+    }
+
     saveDeckToStorage();
-    
-    currentIndex = deck.length - 1;
     loadCard(currentIndex);
     closeForm();
 }
@@ -257,10 +260,9 @@ function exportDeck() {
     if (deck.length === 0) return;
     const dataStr = JSON.stringify(deck, null, 2); 
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = 'deck_export.json';
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.setAttribute('download', 'deck_export.json');
     linkElement.click();
 }
 
@@ -274,39 +276,41 @@ function handleImportFile(e) {
             if (Array.isArray(importedData)) {
                 deck = importedData;
                 saveDeckToStorage(); 
-                // При импорте пересчитываем алгоритм
                 currentIndex = getNextCardIndex();
                 loadCard(currentIndex);
             } else {
-                alert("Ошибка: Неверный формат файла. Ожидался массив карточек.");
+                alert("Ошибка: Неверный формат файла.");
             }
         } catch (err) {
-            alert("Ошибка чтения JSON файла.");
-            console.error(err);
+            alert("Ошибка чтения JSON.");
         }
     };
     reader.readAsText(file);
     importFileInput.value = '';
 }
 
-// Привязка событий
 cardContainer.addEventListener('click', (e) => {
     if (e.target.tagName.toLowerCase() === 'a') return; 
     flipCard();
 });
 
-// Слушатели для алгоритмических кнопок
+// Кнопка редактирования на обороте
+editCardBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openEditForm();
+});
+
 refreshBtn.addEventListener('click', (e) => {
     e.stopPropagation(); 
-    gradeCard(false); // Забыл
+    gradeCard(false);
 });
 
 gotItBtn.addEventListener('click', (e) => {
     e.stopPropagation(); 
-    gradeCard(true); // Вспомнил
+    gradeCard(true);
 });
 
-openFormBtn.addEventListener('click', openForm);
+openFormBtn.addEventListener('click', openAddForm);
 closeFormBtn.addEventListener('click', closeForm);
 formOverlay.addEventListener('click', (e) => {
     if (e.target === formOverlay) closeForm();
@@ -323,6 +327,5 @@ importFileInput.addEventListener('change', handleImportFile);
 radioTypes.forEach(radio => radio.addEventListener('change', updateFormTheme));
 addCardForm.addEventListener('submit', handleFormSubmit);
 
-// Запуск с вычисления правильной карты
 currentIndex = getNextCardIndex();
 loadCard(currentIndex);

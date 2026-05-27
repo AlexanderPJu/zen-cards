@@ -106,7 +106,6 @@ body {
     margin: 0;
     letter-spacing: -0.02em;
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-    /* НОВЫЙ КОД: Невидимый противовес, уравновешивающий фуригану сверху */
     margin-bottom: 30px; 
 }
 
@@ -164,6 +163,31 @@ body {
 .notes a:hover {
     color: var(--text-main);
     text-decoration-color: var(--text-main);
+}
+
+/* Кнопка редактирования (п.1) */
+.edit-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+    padding: 5px;
+    box-shadow: none;
+    width: auto;
+    height: auto;
+}
+.edit-btn:hover {
+    opacity: 1;
+    color: var(--text-main);
+    transform: scale(1.1);
+    background: transparent;
+    box-shadow: none;
 }
 
 .actions {
