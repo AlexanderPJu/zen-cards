@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTHL Cards</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+
+    <!-- Кнопка экспорта (скачивания) базы -->
+    <button class="export-btn" id="exportBtn">↓</button>
+    <!-- Кнопка вызова формы добавления -->
+    <button class="add-trigger-btn" id="openFormBtn">+</button>
+
+    <div class="card-container" id="cardContainer">
+        <div class="card" id="card">
+            <!-- Лицевая сторона -->
+            <div class="card-face card-front" id="cardFrontFace">
+                <div class="badge" id="cardBadge">English</div>
+                <div class="furigana" id="cardFurigana"></div>
+                <h1 class="front-text" id="cardFrontText"></h1>
+            </div>
+            
+            <!-- Обратная сторона -->
+            <div class="card-face card-back">
+                <div class="back-text" id="cardBackText"></div>
+                <div class="notes" id="cardNotes"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions" id="actions">
+        <button id="nextBtn">Next Card</button>
+    </div>
+
+    <!-- Сдвижная панель формы (Glassmorphism) -->
+    <div class="form-overlay" id="formOverlay">
+        <div class="form-panel" id="formPanel">
+            <button class="close-btn" id="closeFormBtn">×</button>
+            <h2 class="form-title">Create Concept</h2>
+            
+            <form id="addCardForm" autocomplete="off">
+                <!-- Селектор типа (EN / JA / ZH / KO) -->
+                <div class="type-selector">
+                    <label class="type-option option-en">
+                        <input type="radio" name="cardType" value="english" checked>
+                        <span>EN</span>
+                    </label>
+                    <label class="type-option option-ja">
+                        <input type="radio" name="cardType" value="japanese">
+                        <span>JA</span>
+                    </label>
+                    <label class="type-option option-zh">
+                        <input type="radio" name="cardType" value="chinese">
+                        <span>ZH</span>
+                    </label>
+                    <label class="type-option option-ko">
+                        <input type="radio" name="cardType" value="korean">
+                        <span>KO</span>
+                    </label>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="inputFront" placeholder="Front (Term / Kanji / Hanzi / Hangul)" required>
+                </div>
+                
+                <div class="input-group" id="readingGroup">
+                    <input type="text" id="inputReading" placeholder="Reading (Pronunciation / Furigana / Pinyin)">
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="inputBack" placeholder="Back (Meaning / Definition)" required>
+                </div>
+
+                <div class="input-group">
+                    <textarea id="inputNotes" placeholder="Context, notes or example sentences..." rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">Save to Deck</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
