@@ -106,6 +106,8 @@ body {
     margin: 0;
     letter-spacing: -0.02em;
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    /* НОВЫЙ КОД: Невидимый противовес, уравновешивающий фуригану сверху */
+    margin-bottom: 30px; 
 }
 
 .furigana {
@@ -117,14 +119,16 @@ body {
     letter-spacing: 0.05em;
 }
 
-/* Эстетика подсказки-призрака */
 .ghost-hint {
+    position: absolute;
+    bottom: 30px; 
+    width: 100%;
+    text-align: center;
     font-size: 0.95rem;
     color: var(--text-main);
     opacity: 0.1; 
     font-weight: 300;
     letter-spacing: 0.05em;
-    margin-top: 15px;
     min-height: 1.2rem;
     transition: opacity 0.4s ease;
 }
@@ -193,6 +197,20 @@ button:active {
     transform: translateY(0);
 }
 
+#refreshBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-ko);
+    color: var(--text-main);
+    box-shadow: 0 8px 25px rgba(178, 132, 149, 0.2);
+}
+
+#gotItBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-ja);
+    color: var(--text-main);
+    box-shadow: 0 8px 25px rgba(87, 142, 135, 0.2);
+}
+
 .add-trigger-btn {
     position: fixed;
     top: 30px;
@@ -227,11 +245,10 @@ button:active {
     z-index: 10;
 }
 
-/* Кнопка Импорта (↑) */
 .import-btn {
     position: fixed;
     top: 30px;
-    right: 138px; /* Сдвинута еще левее, чтобы встать в красивый ряд */
+    right: 138px;
     width: 44px;
     height: 44px;
     padding: 0;
@@ -429,19 +446,4 @@ button:active {
     background: var(--form-active-color, var(--color-en));
     filter: brightness(1.1);
     transform: translateY(-2px);
-}
-
-/* Индивидуальные ховер-эффекты для алгоритмических кнопок */
-#refreshBtn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--color-ko); /* Пыльная орхидея */
-    color: var(--text-main);
-    box-shadow: 0 8px 25px rgba(178, 132, 149, 0.2);
-}
-
-#gotItBtn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--color-ja); /* Спокойный нефритовый */
-    color: var(--text-main);
-    box-shadow: 0 8px 25px rgba(87, 142, 135, 0.2);
 }
