@@ -1,3 +1,5 @@
+console.log("🚀 VIBE CARDS: СКРИПТ ЗАГРУЖЕН (Версия со звуком) 🚀");
+
 const STORAGE_KEY = 'zen_cards_deck';
 
 const defaultDeck = [
@@ -51,7 +53,7 @@ if (!deck || deck.length === 0) {
 }
 
 let currentIndex = 0;
-let isEditMode = false; // Флаг режима редактирования
+let isEditMode = false;
 
 const cardContainer = document.getElementById('cardContainer');
 const cardElement = document.getElementById('card');
@@ -66,7 +68,7 @@ const elNotes = document.getElementById('cardNotes');
 const elHint = document.getElementById('cardHint');
 
 const openFormBtn = document.getElementById('openFormBtn');
-const editCardBtn = document.getElementById('editCardBtn'); // Новая кнопка
+const editCardBtn = document.getElementById('editCardBtn');
 const closeFormBtn = document.getElementById('closeFormBtn');
 const formOverlay = document.getElementById('formOverlay');
 const formTitle = document.getElementById('formTitle');
@@ -85,11 +87,91 @@ const colors = {
     korean: { primary: "#B28495", shadow: "rgba(178, 132, 149, 0.15)" }
 };
 
+// ==========================================
+// ЯДРО 2: Cyberjazz Audio Engine 
+// ==========================================
+const AudioEngine = {
+    ctx: null,
+    
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return false;
+            this.ctx = new AudioContext();
+            console.log("🎵 AudioContext создан. Статус:", this.ctx.state);
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().then(() => console.log("✅ Звук разблокирован браузером!"));
+        }
+        return true;
+    },
+
+    play(type) {
+        if (!this.init() || !this.ctx) return;
+        
+        console.log("🔊 Играем звук:", type);
+        const t = this.ctx.currentTime;
+        
+        if (type === 'flip') {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(450, t);
+            osc.frequency.exponentialRampToValueAtTime(80, t + 0.05);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.15);
+        } 
+        else if (type === 'refresh') {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, t);
+            osc.frequency.exponentialRampToValueAtTime(200, t + 0.3);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.5);
+        } 
+        else if (type === 'gotIt') {
+            const freqs = [392.00, 493.88, 587.33, 783.99]; // G4, B4, D5, G5
+            const masterGain = this.ctx.createGain();
+            masterGain.gain.setValueAtTime(0, t);
+            masterGain.gain.linearRampToValueAtTime(0.2, t + 0.05);
+            masterGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+            masterGain.connect(this.ctx.destination);
+
+            freqs.forEach((freq, i) => {
+                const osc = this.ctx.createOscillator();
+                const oscGain = this.ctx.createGain();
+                osc.type = 'sine';
+                const noteStart = t + (i * 0.05);
+                osc.frequency.setValueAtTime(freq, noteStart);
+                oscGain.gain.setValueAtTime(0, noteStart);
+                oscGain.gain.linearRampToValueAtTime(1 / freqs.length, noteStart + 0.02);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, noteStart + 1.0);
+                osc.connect(oscGain);
+                oscGain.connect(masterGain);
+                osc.start(noteStart);
+                osc.stop(noteStart + 1.5);
+            });
+        }
+    }
+};
+// ==========================================
+
 function saveDeckToStorage() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
     } catch (e) {
-        console.error("Ошибка записи в LocalStorage:", e);
+        console.error("Ошибка записи:", e);
     }
 }
 
@@ -114,8 +196,13 @@ function getNextCardIndex() {
 
 function gradeCard(remembered) {
     if (deck.length === 0) return;
+    
+    if (remembered) AudioEngine.play('gotIt');
+    else AudioEngine.play('refresh');
+
     const card = deck[currentIndex];
     const now = Date.now();
+    
     if (remembered) {
         card.level = (card.level || 0) + 1;
         const intervalsInDays = [0.5, 2, 5, 14, 30, 60];
@@ -125,8 +212,10 @@ function gradeCard(remembered) {
         card.level = 0;
         card.nextReview = now + (5 * 60 * 1000);
     }
+    
     saveDeckToStorage();
     currentIndex = getNextCardIndex();
+    
     if (cardElement.classList.contains('is-flipped')) {
         cardElement.classList.remove('is-flipped');
         setTimeout(() => loadCard(currentIndex), 350); 
@@ -147,6 +236,7 @@ function loadCard(index) {
     elFrontText.textContent = cardData.front;
     elBackText.textContent = cardData.back;
     elHint.textContent = cardData.hint || "";
+    
     const rawNotes = cardData.notes || "";
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const notesWithLinks = rawNotes.replace(urlRegex, function(url) {
@@ -158,6 +248,7 @@ function loadCard(index) {
 
 function flipCard() {
     cardElement.classList.toggle('is-flipped');
+    AudioEngine.play('flip');
 }
 
 function updateFormTheme() {
@@ -178,7 +269,6 @@ function updateFormTheme() {
     else if (selectedType === 'korean') readingInput.placeholder = "Reading (Romanization)";
 }
 
-// Открытие формы в режиме создания
 function openAddForm() {
     isEditMode = false;
     formTitle.textContent = "Create Concept";
@@ -188,29 +278,22 @@ function openAddForm() {
     updateFormTheme();
 }
 
-// Открытие формы в режиме редактирования (п.3)
 function openEditForm() {
     isEditMode = true;
     const card = deck[currentIndex];
-    
     formTitle.textContent = "Edit Concept";
     submitBtn.textContent = "Update Concept";
-    
-    // Предзаполнение полей
     document.getElementById('inputFront').value = card.front;
     document.getElementById('inputReading').value = card.reading || "";
     document.getElementById('inputHint').value = card.hint || "";
     document.getElementById('inputBack').value = card.back;
     document.getElementById('inputNotes').value = card.notes || "";
-    
-    // Установка радио-кнопки типа
     for (const radio of radioTypes) {
         if (radio.value === card.type) {
             radio.checked = true;
             break;
         }
     }
-    
     formOverlay.classList.add('active');
     updateFormTheme();
 }
@@ -229,7 +312,6 @@ function handleFormSubmit(e) {
             break;
         }
     }
-
     const cardData = {
         type: selectedCardType,
         front: document.getElementById('inputFront').value.trim(),
@@ -240,17 +322,14 @@ function handleFormSubmit(e) {
     };
 
     if (isEditMode) {
-        // РЕДАКТИРОВАНИЕ: обновляем только контент, сохраняя прогресс (level/nextReview)
         const currentCard = deck[currentIndex];
         Object.assign(currentCard, cardData);
     } else {
-        // СОЗДАНИЕ: добавляем новую карту
         cardData.level = 0;
         cardData.nextReview = null;
         deck.push(cardData);
         currentIndex = deck.length - 1;
     }
-
     saveDeckToStorage();
     loadCard(currentIndex);
     closeForm();
@@ -278,9 +357,7 @@ function handleImportFile(e) {
                 saveDeckToStorage(); 
                 currentIndex = getNextCardIndex();
                 loadCard(currentIndex);
-            } else {
-                alert("Ошибка: Неверный формат файла.");
-            }
+            } else alert("Ошибка: Неверный формат файла.");
         } catch (err) {
             alert("Ошибка чтения JSON.");
         }
@@ -289,12 +366,12 @@ function handleImportFile(e) {
     importFileInput.value = '';
 }
 
+// Привязка событий
 cardContainer.addEventListener('click', (e) => {
     if (e.target.tagName.toLowerCase() === 'a') return; 
     flipCard();
 });
 
-// Кнопка редактирования на обороте
 editCardBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     openEditForm();
