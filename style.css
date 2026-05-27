@@ -117,6 +117,23 @@ body {
     letter-spacing: 0.05em;
 }
 
+/* Эстетика подсказки-призрака */
+.ghost-hint {
+    font-size: 0.95rem;
+    color: var(--text-main);
+    opacity: 0.1; /* Едва различимый текст */
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-top: 15px;
+    min-height: 1.2rem;
+    transition: opacity 0.4s ease;
+}
+
+/* При наведении карточка слегка "проявляет" призрак-текст для более комфортного считывания */
+.card-container:hover .ghost-hint {
+    opacity: 0.18;
+}
+
 .back-text {
     font-size: 1.8rem;
     font-weight: 500;
@@ -194,11 +211,10 @@ button:active {
     z-index: 10;
 }
 
-/* Кнопка Экспорта (↓) */
 .export-btn {
     position: fixed;
     top: 30px;
-    right: 84px; /* Позиционируем слева от кнопки "+" */
+    right: 84px; 
     width: 44px;
     height: 44px;
     padding: 0;
@@ -363,10 +379,10 @@ button:active {
     transition: all 0.3s ease;
 }
 
-/* Настройки textarea (запрещено сжиматься меньше дефолта) */
+/* Область контекста не должна уменьшаться меньше дефолтной высоты */
 .input-group textarea {
-    resize: vertical; /* Тянется только по вертикали */
-    min-height: 96px; /* Минимальная высота по умолчанию (равно rows="3") */
+    resize: vertical; 
+    min-height: 96px; /* Высота по умолчанию */
     max-height: 250px; 
 }
 

@@ -21,6 +21,8 @@
                 <div class="badge" id="cardBadge">English</div>
                 <div class="furigana" id="cardFurigana"></div>
                 <h1 class="front-text" id="cardFrontText"></h1>
+                <!-- Контейнер для подсказки-призрака -->
+                <div class="ghost-hint" id="cardHint"></div>
             </div>
             
             <!-- Обратная сторона -->
@@ -68,6 +70,11 @@
                 
                 <div class="input-group" id="readingGroup">
                     <input type="text" id="inputReading" placeholder="Reading (Pronunciation / Furigana / Pinyin)">
+                </div>
+
+                <!-- Поле для подсказки-призрака -->
+                <div class="input-group">
+                    <input type="text" id="inputHint" placeholder="Hint (Ghost Text on Front - Optional)">
                 </div>
 
                 <div class="input-group">

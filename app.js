@@ -6,6 +6,7 @@ const defaultDeck = [
         type: "english",
         front: "Ubiquitous",
         reading: "/juːˈbɪk.wɪ.təs/",
+        hint: "everywhere",
         back: "Вездесущий",
         notes: "Seeming to be everywhere. Ex: 'The mobile phone is ubiquitous.'"
     },
@@ -13,6 +14,7 @@ const defaultDeck = [
         type: "japanese",
         front: "改善",
         reading: "かいぜん",
+        hint: "Kai = change, Zen = good",
         back: "Kaizen",
         notes: "Continuous improvement. A core philosophy in Japanese business and life."
     },
@@ -20,6 +22,7 @@ const defaultDeck = [
         type: "chinese",
         front: "你好",
         reading: "nǐ hǎo",
+        hint: "literally 'you good'",
         back: "Hello",
         notes: "A standard greeting in Chinese. Literally 'you good'."
     },
@@ -27,6 +30,7 @@ const defaultDeck = [
         type: "korean",
         front: "잘 지내요?",
         reading: "jal jinaeyo?",
+        hint: "Polite state of being",
         back: "Как дела?",
         notes: "Polite way to ask 'How are you?' in Korean."
     }
@@ -58,6 +62,7 @@ const elFurigana = document.getElementById('cardFurigana');
 const elFrontText = document.getElementById('cardFrontText');
 const elBackText = document.getElementById('cardBackText');
 const elNotes = document.getElementById('cardNotes');
+const elHint = document.getElementById('cardHint'); // Контейнер подсказки
 
 const openFormBtn = document.getElementById('openFormBtn');
 const closeFormBtn = document.getElementById('closeFormBtn');
@@ -65,7 +70,6 @@ const formOverlay = document.getElementById('formOverlay');
 const addCardForm = document.getElementById('addCardForm');
 const radioTypes = document.getElementsByName('cardType');
 
-// Кнопка Экспорта
 const exportBtn = document.getElementById('exportBtn');
 
 const colors = {
@@ -107,6 +111,9 @@ function loadCard(index) {
     elFurigana.textContent = cardData.reading || "";
     elFrontText.textContent = cardData.front;
     elBackText.textContent = cardData.back;
+    
+    // Выводим подсказку-призрак (если она есть)
+    elHint.textContent = cardData.hint || "";
     
     const rawNotes = cardData.notes || "";
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -178,6 +185,7 @@ function handleFormSubmit(e) {
         type: selectedCardType,
         front: document.getElementById('inputFront').value.trim(),
         reading: document.getElementById('inputReading').value.trim(),
+        hint: document.getElementById('inputHint').value.trim(), // Сохранение новой подсказки
         back: document.getElementById('inputBack').value.trim(),
         notes: document.getElementById('inputNotes').value.trim()
     };
@@ -191,21 +199,17 @@ function handleFormSubmit(e) {
     closeForm();
 }
 
-// Функция для выгрузки (экспорта) базы занесенных слов
 function exportDeck() {
     if (deck.length === 0) return;
     
-    // Форматируем JSON для красоты и легкого чтения человеком
     const dataStr = JSON.stringify(deck, null, 2); 
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    // Создаем временную ссылку на скачивание файла
     const exportFileDefaultName = 'deck_export.json';
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     
-    // Имитируем клик
     linkElement.click();
 }
 
@@ -229,7 +233,7 @@ formOverlay.addEventListener('click', (e) => {
 
 exportBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    exportDeck(); // Вызов выгрузки при нажатии ↓
+    exportDeck(); 
 });
 
 radioTypes.forEach(radio => radio.addEventListener('change', updateFormTheme));
