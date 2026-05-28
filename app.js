@@ -1,4 +1,4 @@
-console.log("🚀 VIBE CARDS: СКРИПТ ЗАГРУЖЕН (Версия со звуком) 🚀");
+console.log("🚀 VIBE CARDS: СКРИПТ ЗАГРУЖЕН (Версия с Text-To-Speech) 🚀");
 
 const STORAGE_KEY = 'zen_cards_deck';
 
@@ -69,6 +69,7 @@ const elHint = document.getElementById('cardHint');
 
 const openFormBtn = document.getElementById('openFormBtn');
 const editCardBtn = document.getElementById('editCardBtn');
+const speakCardBtn = document.getElementById('speakCardBtn'); // Новая кнопка
 const closeFormBtn = document.getElementById('closeFormBtn');
 const formOverlay = document.getElementById('formOverlay');
 const formTitle = document.getElementById('formTitle');
@@ -88,83 +89,82 @@ const colors = {
 };
 
 // ==========================================
-// ЯДРО 2: Cyberjazz Audio Engine 
+// ЯДРО 2: Cyberjazz Audio Engine (External Samples)
 // ==========================================
 const AudioEngine = {
-    ctx: null,
+    sounds: {
+        flip: new Audio('flip.mp3'),
+        refresh: new Audio('refresh.mp3'),
+        gotIt: new Audio('gotit.mp3')
+    },
     
     init() {
-        if (!this.ctx) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return false;
-            this.ctx = new AudioContext();
-            console.log("🎵 AudioContext создан. Статус:", this.ctx.state);
-        }
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume().then(() => console.log("✅ Звук разблокирован браузером!"));
-        }
-        return true;
+        Object.values(this.sounds).forEach(audio => {
+            audio.load();
+            audio.volume = 0.4;
+        });
+        console.log("🎵 Аудиодвижок настроен на работу с файлами.");
     },
 
     play(type) {
-        if (!this.init() || !this.ctx) return;
-        
-        console.log("🔊 Играем звук:", type);
-        const t = this.ctx.currentTime;
-        
-        if (type === 'flip') {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(450, t);
-            osc.frequency.exponentialRampToValueAtTime(80, t + 0.05);
-            gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            osc.start(t);
-            osc.stop(t + 0.15);
-        } 
-        else if (type === 'refresh') {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, t);
-            osc.frequency.exponentialRampToValueAtTime(200, t + 0.3);
-            gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            osc.start(t);
-            osc.stop(t + 0.5);
-        } 
-        else if (type === 'gotIt') {
-            const freqs = [392.00, 493.88, 587.33, 783.99]; // G4, B4, D5, G5
-            const masterGain = this.ctx.createGain();
-            masterGain.gain.setValueAtTime(0, t);
-            masterGain.gain.linearRampToValueAtTime(0.2, t + 0.05);
-            masterGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-            masterGain.connect(this.ctx.destination);
-
-            freqs.forEach((freq, i) => {
-                const osc = this.ctx.createOscillator();
-                const oscGain = this.ctx.createGain();
-                osc.type = 'sine';
-                const noteStart = t + (i * 0.05);
-                osc.frequency.setValueAtTime(freq, noteStart);
-                oscGain.gain.setValueAtTime(0, noteStart);
-                oscGain.gain.linearRampToValueAtTime(1 / freqs.length, noteStart + 0.02);
-                oscGain.gain.exponentialRampToValueAtTime(0.01, noteStart + 1.0);
-                osc.connect(oscGain);
-                oscGain.connect(masterGain);
-                osc.start(noteStart);
-                osc.stop(noteStart + 1.5);
+        const sound = this.sounds[type];
+        if (sound) {
+            sound.currentTime = 0; 
+            sound.play().catch(err => {
+                console.log(`🔇 Звук ${type} не воспроизвелся. Добавьте ${type}.mp3 в папку проекта.`);
             });
         }
     }
 };
+
+AudioEngine.init();
+
+// ==========================================
+// ЯДРО 3: Нативный Дзен Text-To-Speech (SpeechSynthesis)
+// ==========================================
+const SpeechEngine = {
+    // Карта языковых кодов
+    langMap: {
+        english: "en-US",
+        japanese: "ja-JP",
+        chinese: "zh-CN",
+        korean: "ko-KR"
+    },
+
+    speak(text, type) {
+        // Проверяем поддержку синтеза речи браузером
+        if (!('speechSynthesis' in window)) {
+            console.warn("TTS не поддерживается вашим браузером.");
+            return;
+        }
+
+        // Останавливаем текущую речь, если она еще звучит
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        const targetLang = this.langMap[type] || "en-US";
+        utterance.lang = targetLang;
+
+        // Пытаемся найти самый качественный нативный голос для выбранной локали
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang.startsWith(targetLang) && v.localService);
+        if (voice) {
+            utterance.voice = voice;
+        }
+
+        // Настройки дзен-произношения: чуть медленнее и глубже (high-life vibe)
+        utterance.rate = 0.85; // Спокойный темп речи (чуть медленнее стандарта)
+        utterance.pitch = 0.95; // Слегка пониженный тон для мягкости голоса
+
+        window.speechSynthesis.speak(utterance);
+        console.log(`🗣️ TTS: Озвучено "${text}" на языке ${targetLang}`);
+    }
+};
+
+// Хак для Safari/Chrome на десктопах, чтобы голоса загрузились в память заранее
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+}
 // ==========================================
 
 function saveDeckToStorage() {
@@ -237,6 +237,9 @@ function loadCard(index) {
     elBackText.textContent = cardData.back;
     elHint.textContent = cardData.hint || "";
     
+    // Передаем цвет активного языка кнопке озвучки
+    document.documentElement.style.setProperty('--form-active-color', activeColor);
+
     const rawNotes = cardData.notes || "";
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const notesWithLinks = rawNotes.replace(urlRegex, function(url) {
@@ -375,6 +378,14 @@ cardContainer.addEventListener('click', (e) => {
 editCardBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     openEditForm();
+});
+
+// Клик по кнопке озвучки на обороте
+speakCardBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const card = deck[currentIndex];
+    // Запускаем озвучку текста лицевой стороны (front) с учетом его языка (type)
+    SpeechEngine.speak(card.front, card.type);
 });
 
 refreshBtn.addEventListener('click', (e) => {

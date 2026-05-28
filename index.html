@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTHL Cards</title>
     <link rel="stylesheet" href="style.css">
-    <script src="app.js?v=2" defer></script>
+    <script src="app.js?v=3" defer></script> <!-- Обновили версию для сброса кэша -->
 </head>
 <body>
 
@@ -26,8 +26,11 @@
             
             <!-- Обратная сторона -->
             <div class="card-face card-back">
-                <!-- Кнопка редактирования (только на обороте) -->
+                <!-- Кнопка редактирования -->
                 <button class="edit-btn" id="editCardBtn">✎</button>
+                <!-- Кнопка озвучки (Text-To-Speech) -->
+                <button class="speak-btn" id="speakCardBtn">🔊</button>
+                
                 <div class="back-text" id="cardBackText"></div>
                 <div class="notes" id="cardNotes"></div>
             </div>

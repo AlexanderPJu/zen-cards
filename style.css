@@ -165,7 +165,7 @@ body {
     text-decoration-color: var(--text-main);
 }
 
-/* Кнопка редактирования (п.1) */
+/* Кнопка редактирования (на обороте справа) */
 .edit-btn {
     position: absolute;
     top: 20px;
@@ -185,6 +185,31 @@ body {
 .edit-btn:hover {
     opacity: 1;
     color: var(--text-main);
+    transform: scale(1.1);
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Кнопка озвучки (на обороте слева) */
+.speak-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+    padding: 5px;
+    box-shadow: none;
+    width: auto;
+    height: auto;
+}
+.speak-btn:hover {
+    opacity: 1;
+    color: var(--form-active-color, var(--text-main)); /* Подсвечивается в цвет текущего языка */
     transform: scale(1.1);
     background: transparent;
     box-shadow: none;
