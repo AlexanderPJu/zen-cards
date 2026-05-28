@@ -122,8 +122,11 @@ AudioEngine.init();
 // ==========================================
 // ЯДРО 3: Нативный Дзен Text-To-Speech (SpeechSynthesis)
 // ==========================================
+// ==========================================
+// ЯДРО 3: Нативный Дзен Text-To-Speech (SpeechSynthesis)
+// ==========================================
 const SpeechEngine = {
-    // Карта языковых кодов
+    voicesLoaded: false,
     langMap: {
         english: "en-US",
         japanese: "ja-JP",
@@ -131,35 +134,61 @@ const SpeechEngine = {
         korean: "ko-KR"
     },
 
+    // Предварительный "разогрев" движка
+    init() {
+        if (!('speechSynthesis' in window)) return;
+        
+        // Заставляем браузер немедленно запросить голоса
+        window.speechSynthesis.getVoices();
+        
+        // Слушаем событие, когда асинхронные Premium-голоса загрузятся
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => {
+                this.voicesLoaded = true;
+                console.log("🗣️ Голоса TTS успешно загружены и готовы к работе.");
+            };
+        }
+    },
+
     speak(text, type) {
-        // Проверяем поддержку синтеза речи браузером
         if (!('speechSynthesis' in window)) {
             console.warn("TTS не поддерживается вашим браузером.");
             return;
         }
 
-        // Останавливаем текущую речь, если она еще звучит
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Останавливаем предыдущую речь
 
         const utterance = new SpeechSynthesisUtterance(text);
         const targetLang = this.langMap[type] || "en-US";
         utterance.lang = targetLang;
 
-        // Пытаемся найти самый качественный нативный голос для выбранной локали
         const voices = window.speechSynthesis.getVoices();
-        const voice = voices.find(v => v.lang.startsWith(targetLang) && v.localService);
-        if (voice) {
-            utterance.voice = voice;
+        
+        // Ищем лучший нативный голос (Premium) для выбранного языка
+        // Сначала ищем локальные премиум-голоса (Google/Apple), если нет - любые
+        let voice = voices.find(v => v.lang.startsWith(targetLang.substring(0, 2)) && v.localService);
+        if (!voice) {
+            voice = voices.find(v => v.lang.startsWith(targetLang.substring(0, 2)));
         }
 
-        // Настройки дзен-произношения: чуть медленнее и глубже (high-life vibe)
-        utterance.rate = 0.85; // Спокойный темп речи (чуть медленнее стандарта)
-        utterance.pitch = 0.95; // Слегка пониженный тон для мягкости голоса
+        if (voice) {
+            utterance.voice = voice;
+        } else {
+            console.warn(`Не найден голос для языка: ${targetLang}`);
+        }
+
+        utterance.rate = 0.85; 
+        utterance.pitch = 0.95; 
 
         window.speechSynthesis.speak(utterance);
         console.log(`🗣️ TTS: Озвучено "${text}" на языке ${targetLang}`);
     }
 };
+
+// Запускаем разогрев сразу при загрузке скрипта
+SpeechEngine.init();
+// ==========================================
+
 
 // Хак для Safari/Chrome на десктопах, чтобы голоса загрузились в память заранее
 if ('speechSynthesis' in window) {
