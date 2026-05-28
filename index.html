@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTHL Cards</title>
     <link rel="stylesheet" href="style.css">
-    <script src="app.js?v=3" defer></script> <!-- Обновили версию для сброса кэша -->
+    <script src="app.js?v=4" defer></script>
 </head>
 <body>
 
+    <!-- Индикатор/Кнопка облачной синхронизации -->
+    <button class="export-btn" id="cloudSyncBtn" style="right: 192px; color: var(--text-muted);" title="Cloud Sync">☁️</button>
+
     <input type="file" id="importFileInput" accept=".json" style="display: none;">
-    <button class="import-btn" id="importBtn">↑</button>
-    <button class="export-btn" id="exportBtn">↓</button>
-    <button class="add-trigger-btn" id="openFormBtn">+</button>
+    <button class="import-btn" id="importBtn" title="Import JSON">↑</button>
+    <button class="export-btn" id="exportBtn" title="Export JSON">↓</button>
+    <button class="add-trigger-btn" id="openFormBtn" title="Add Card">+</button>
 
     <div class="card-container" id="cardContainer">
         <div class="card" id="card">
@@ -26,9 +29,7 @@
             
             <!-- Обратная сторона -->
             <div class="card-face card-back">
-                <!-- Кнопка редактирования -->
                 <button class="edit-btn" id="editCardBtn">✎</button>
-                <!-- Кнопка озвучки (Text-To-Speech) -->
                 <button class="speak-btn" id="speakCardBtn">🔊</button>
                 
                 <div class="back-text" id="cardBackText"></div>
@@ -42,6 +43,24 @@
         <button id="gotItBtn">Got it</button>
     </div>
 
+    <!-- Модальное окно настройки Облака -->
+    <div class="form-overlay" id="cloudOverlay">
+        <div class="form-panel">
+            <button class="close-btn" id="closeCloudBtn">×</button>
+            <h2 class="form-title">Cloud Sync Setup</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                Enter your GitHub Personal Access Token (with 'gist' scope) to enable seamless cross-device synchronization.
+            </p>
+            <form id="cloudSetupForm" autocomplete="off">
+                <div class="input-group">
+                    <input type="password" id="inputGithubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required>
+                </div>
+                <button type="submit" class="submit-btn" style="background: var(--color-ja);">Connect to Cloud</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Существующая форма добавления карточек -->
     <div class="form-overlay" id="formOverlay">
         <div class="form-panel" id="formPanel">
             <button class="close-btn" id="closeFormBtn">×</button>

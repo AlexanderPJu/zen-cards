@@ -1,6 +1,8 @@
-console.log("🚀 VIBE CARDS: СКРИПТ ЗАГРУЖЕН (Версия с Text-To-Speech) 🚀");
+console.log("🚀 VIBE CARDS: Cloud Edition Loaded 🚀");
 
 const STORAGE_KEY = 'zen_cards_deck';
+const GITHUB_TOKEN_KEY = 'zen_cards_gh_token';
+const GIST_ID_KEY = 'zen_cards_gist_id';
 
 const defaultDeck = [
     {
@@ -40,16 +42,14 @@ const defaultDeck = [
 let deck = [];
 try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-        deck = JSON.parse(stored);
-    }
+    if (stored) deck = JSON.parse(stored);
 } catch (e) {
     console.error("Ошибка чтения LocalStorage:", e);
 }
 
 if (!deck || deck.length === 0) {
     deck = [...defaultDeck];
-    saveDeckToStorage();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
 }
 
 let currentIndex = 0;
@@ -69,7 +69,7 @@ const elHint = document.getElementById('cardHint');
 
 const openFormBtn = document.getElementById('openFormBtn');
 const editCardBtn = document.getElementById('editCardBtn');
-const speakCardBtn = document.getElementById('speakCardBtn'); // Новая кнопка
+const speakCardBtn = document.getElementById('speakCardBtn');
 const closeFormBtn = document.getElementById('closeFormBtn');
 const formOverlay = document.getElementById('formOverlay');
 const formTitle = document.getElementById('formTitle');
@@ -81,6 +81,12 @@ const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importFileInput = document.getElementById('importFileInput');
 
+const cloudSyncBtn = document.getElementById('cloudSyncBtn');
+const cloudOverlay = document.getElementById('cloudOverlay');
+const closeCloudBtn = document.getElementById('closeCloudBtn');
+const cloudSetupForm = document.getElementById('cloudSetupForm');
+const inputGithubToken = document.getElementById('inputGithubToken');
+
 const colors = {
     english: { primary: "#6B7B9C", shadow: "rgba(107, 123, 156, 0.15)" },
     japanese: { primary: "#578E87", shadow: "rgba(87, 142, 135, 0.15)" },
@@ -89,41 +95,144 @@ const colors = {
 };
 
 // ==========================================
-// ЯДРО 2: Cyberjazz Audio Engine (External Samples)
+// ЯДРО 4: Cloud Sync Engine (GitHub Gist)
 // ==========================================
-const AudioEngine = {
-    sounds: {
-        flip: new Audio('flip.mp3'),
-        refresh: new Audio('refresh.mp3'),
-        gotIt: new Audio('gotit.mp3')
-    },
-    
-    init() {
-        Object.values(this.sounds).forEach(audio => {
-            audio.load();
-            audio.volume = 0.4;
-        });
-        console.log("🎵 Аудиодвижок настроен на работу с файлами.");
+const CloudEngine = {
+    token: localStorage.getItem(GITHUB_TOKEN_KEY),
+    gistId: localStorage.getItem(GIST_ID_KEY),
+
+    updateUIState() {
+        if (this.token && this.gistId) {
+            cloudSyncBtn.style.color = "var(--color-ja)"; // Зеленый = подключено
+            cloudSyncBtn.title = "Cloud: Synchronized";
+        } else {
+            cloudSyncBtn.style.color = "var(--text-muted)"; // Серый = отключено
+            cloudSyncBtn.title = "Cloud: Setup Required";
+        }
     },
 
-    play(type) {
-        const sound = this.sounds[type];
-        if (sound) {
-            sound.currentTime = 0; 
-            sound.play().catch(err => {
-                console.log(`🔇 Звук ${type} не воспроизвелся. Добавьте ${type}.mp3 в папку проекта.`);
+    async init() {
+        this.updateUIState();
+        if (this.token && this.gistId) {
+            cloudSyncBtn.style.color = "#FFD700"; // Желтый = загрузка
+            await this.fetchFromCloud();
+            this.updateUIState();
+        }
+    },
+
+    async setup(token) {
+        this.token = token;
+        localStorage.setItem(GITHUB_TOKEN_KEY, token);
+        cloudSyncBtn.style.color = "#FFD700"; // Загрузка
+
+        try {
+            // Пытаемся найти существующий Gist
+            const response = await fetch("https://api.github.com/gists", {
+                headers: { Authorization: `token ${this.token}` }
             });
+            const gists = await response.json();
+            const existingGist = gists.find(g => g.files && g.files["zen_deck.json"]);
+
+            if (existingGist) {
+                // Нашли базу - подключаемся к ней и скачиваем
+                this.gistId = existingGist.id;
+                localStorage.setItem(GIST_ID_KEY, this.gistId);
+                console.log("☁️ Облако: Найдена существующая база, загружаем...");
+                await this.fetchFromCloud();
+            } else {
+                // Базы нет - создаем новую и пушим туда локальные данные
+                console.log("☁️ Облако: База не найдена, создаем новую...");
+                await this.pushToCloud(deck, true);
+            }
+            this.updateUIState();
+            return true;
+        } catch (error) {
+            console.error("☁️ Ошибка настройки облака:", error);
+            alert("Cloud Connection Failed. Check your token.");
+            this.token = null;
+            localStorage.removeItem(GITHUB_TOKEN_KEY);
+            this.updateUIState();
+            return false;
+        }
+    },
+
+    async fetchFromCloud() {
+        if (!this.token || !this.gistId) return;
+        try {
+            const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+                headers: { Authorization: `token ${this.token}` }
+            });
+            const data = await response.json();
+            const content = data.files["zen_deck.json"].content;
+            
+            const cloudDeck = JSON.parse(content);
+            if (Array.isArray(cloudDeck) && cloudDeck.length > 0) {
+                deck = cloudDeck;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(deck)); // Кэшируем локально
+                console.log("☁️ Облако: Данные успешно синхронизированы на устройство.");
+                
+                // Перезагружаем интерфейс
+                currentIndex = getNextCardIndex();
+                loadCard(currentIndex);
+            }
+        } catch (error) {
+            console.error("☁️ Ошибка загрузки из облака:", error);
+        }
+    },
+
+    async pushToCloud(deckData, isCreating = false) {
+        if (!this.token) return;
+        const body = {
+            description: "Zen Cards Cloud Backup",
+            public: false, // Приватный gist
+            files: {
+                "zen_deck.json": { content: JSON.stringify(deckData, null, 2) }
+            }
+        };
+
+        try {
+            const url = isCreating ? "https://api.github.com/gists" : `https://api.github.com/gists/${this.gistId}`;
+            const method = isCreating ? "POST" : "PATCH";
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    Authorization: `token ${this.token}`,
+                    Accept: "application/vnd.github.v3+json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+            if (isCreating && data.id) {
+                this.gistId = data.id;
+                localStorage.setItem(GIST_ID_KEY, this.gistId);
+                console.log("☁️ Облако: Новая база успешно создана!");
+            } else {
+                console.log("☁️ Облако: Прогресс синхронизирован.");
+            }
+            this.updateUIState();
+        } catch (error) {
+            console.error("☁️ Ошибка отправки в облако:", error);
+            cloudSyncBtn.style.color = "red"; // Ошибка
         }
     }
 };
 
-AudioEngine.init();
+// Запуск облака
+CloudEngine.init();
+
+// Функция сохранения, которая теперь пишет И в LocalStorage И в Облако
+function saveDeckToStorageAndCloud() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
+    CloudEngine.pushToCloud(deck); // Асинхронно в фоне
+}
+// ==========================================
+
 
 // ==========================================
-// ЯДРО 3: Нативный Дзен Text-To-Speech (SpeechSynthesis)
-// ==========================================
-// ==========================================
-// ЯДРО 3: Нативный Дзен Text-To-Speech (SpeechSynthesis)
+// ЯДРО 3: Нативный Дзен Text-To-Speech
 // ==========================================
 const SpeechEngine = {
     voicesLoaded: false,
@@ -134,75 +243,38 @@ const SpeechEngine = {
         korean: "ko-KR"
     },
 
-    // Предварительный "разогрев" движка
     init() {
         if (!('speechSynthesis' in window)) return;
-        
-        // Заставляем браузер немедленно запросить голоса
         window.speechSynthesis.getVoices();
-        
-        // Слушаем событие, когда асинхронные Premium-голоса загрузятся
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => {
                 this.voicesLoaded = true;
-                console.log("🗣️ Голоса TTS успешно загружены и готовы к работе.");
             };
         }
     },
 
     speak(text, type) {
-        if (!('speechSynthesis' in window)) {
-            console.warn("TTS не поддерживается вашим браузером.");
-            return;
-        }
-
-        window.speechSynthesis.cancel(); // Останавливаем предыдущую речь
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel(); 
 
         const utterance = new SpeechSynthesisUtterance(text);
         const targetLang = this.langMap[type] || "en-US";
         utterance.lang = targetLang;
 
         const voices = window.speechSynthesis.getVoices();
-        
-        // Ищем лучший нативный голос (Premium) для выбранного языка
-        // Сначала ищем локальные премиум-голоса (Google/Apple), если нет - любые
         let voice = voices.find(v => v.lang.startsWith(targetLang.substring(0, 2)) && v.localService);
         if (!voice) {
             voice = voices.find(v => v.lang.startsWith(targetLang.substring(0, 2)));
         }
-
-        if (voice) {
-            utterance.voice = voice;
-        } else {
-            console.warn(`Не найден голос для языка: ${targetLang}`);
-        }
+        if (voice) utterance.voice = voice;
 
         utterance.rate = 0.85; 
         utterance.pitch = 0.95; 
-
         window.speechSynthesis.speak(utterance);
-        console.log(`🗣️ TTS: Озвучено "${text}" на языке ${targetLang}`);
     }
 };
-
-// Запускаем разогрев сразу при загрузке скрипта
 SpeechEngine.init();
-// ==========================================
 
-
-// Хак для Safari/Chrome на десктопах, чтобы голоса загрузились в память заранее
-if ('speechSynthesis' in window) {
-    window.speechSynthesis.getVoices();
-}
-// ==========================================
-
-function saveDeckToStorage() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
-    } catch (e) {
-        console.error("Ошибка записи:", e);
-    }
-}
 
 function getThemeColor(type) {
     const cssKeys = { english: 'en', japanese: 'ja', chinese: 'zh', korean: 'ko' };
@@ -226,9 +298,6 @@ function getNextCardIndex() {
 function gradeCard(remembered) {
     if (deck.length === 0) return;
     
-    if (remembered) AudioEngine.play('gotIt');
-    else AudioEngine.play('refresh');
-
     const card = deck[currentIndex];
     const now = Date.now();
     
@@ -242,7 +311,9 @@ function gradeCard(remembered) {
         card.nextReview = now + (5 * 60 * 1000);
     }
     
-    saveDeckToStorage();
+    // Пишем в оба места
+    saveDeckToStorageAndCloud();
+    
     currentIndex = getNextCardIndex();
     
     if (cardElement.classList.contains('is-flipped')) {
@@ -266,7 +337,6 @@ function loadCard(index) {
     elBackText.textContent = cardData.back;
     elHint.textContent = cardData.hint || "";
     
-    // Передаем цвет активного языка кнопке озвучки
     document.documentElement.style.setProperty('--form-active-color', activeColor);
 
     const rawNotes = cardData.notes || "";
@@ -280,7 +350,6 @@ function loadCard(index) {
 
 function flipCard() {
     cardElement.classList.toggle('is-flipped');
-    AudioEngine.play('flip');
 }
 
 function updateFormTheme() {
@@ -362,43 +431,32 @@ function handleFormSubmit(e) {
         deck.push(cardData);
         currentIndex = deck.length - 1;
     }
-    saveDeckToStorage();
+    
+    // Пишем в оба места
+    saveDeckToStorageAndCloud();
+    
     loadCard(currentIndex);
     closeForm();
 }
 
-function exportDeck() {
-    if (deck.length === 0) return;
-    const dataStr = JSON.stringify(deck, null, 2); 
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', 'deck_export.json');
-    linkElement.click();
-}
+// Слушатели событий
+cloudSyncBtn.addEventListener('click', () => {
+    cloudOverlay.classList.add('active');
+});
 
-function handleImportFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        try {
-            const importedData = JSON.parse(event.target.result);
-            if (Array.isArray(importedData)) {
-                deck = importedData;
-                saveDeckToStorage(); 
-                currentIndex = getNextCardIndex();
-                loadCard(currentIndex);
-            } else alert("Ошибка: Неверный формат файла.");
-        } catch (err) {
-            alert("Ошибка чтения JSON.");
-        }
-    };
-    reader.readAsText(file);
-    importFileInput.value = '';
-}
+closeCloudBtn.addEventListener('click', () => {
+    cloudOverlay.classList.remove('active');
+});
 
-// Привязка событий
+cloudSetupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = inputGithubToken.value.trim();
+    if (token) {
+        const success = await CloudEngine.setup(token);
+        if (success) cloudOverlay.classList.remove('active');
+    }
+});
+
 cardContainer.addEventListener('click', (e) => {
     if (e.target.tagName.toLowerCase() === 'a') return; 
     flipCard();
@@ -409,11 +467,9 @@ editCardBtn.addEventListener('click', (e) => {
     openEditForm();
 });
 
-// Клик по кнопке озвучки на обороте
 speakCardBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const card = deck[currentIndex];
-    // Запускаем озвучку текста лицевой стороны (front) с учетом его языка (type)
     SpeechEngine.speak(card.front, card.type);
 });
 
@@ -432,15 +488,6 @@ closeFormBtn.addEventListener('click', closeForm);
 formOverlay.addEventListener('click', (e) => {
     if (e.target === formOverlay) closeForm();
 });
-exportBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    exportDeck(); 
-});
-importBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    importFileInput.click();
-});
-importFileInput.addEventListener('change', handleImportFile);
 radioTypes.forEach(radio => radio.addEventListener('change', updateFormTheme));
 addCardForm.addEventListener('submit', handleFormSubmit);
 
